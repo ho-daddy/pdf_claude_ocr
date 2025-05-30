@@ -32,19 +32,34 @@ class FileManager:
     def setup_fonts(self):
         """PDF 생성을 위한 폰트 설정"""
         try:
-            # 한글 폰트 등록 시도
+            # 웹 환경(Linux)과 로컬 환경을 고려한 한글 폰트 등록
             font_paths = [
-                "C:/Windows/Fonts/malgun.ttf",  # Windows
-                "/System/Library/Fonts/AppleGothic.ttf",  # macOS
-                "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",  # Linux
-                "/usr/share/fonts/noto-cjk/NotoSansCJK-Regular.ttc"  # Linux CJK
+                # Linux (Streamlit Cloud)
+                "/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc",
+                "/usr/share/fonts/noto-cjk/NotoSansCJK-Regular.ttc",
+                "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+                "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+                # Windows
+                "C:/Windows/Fonts/malgun.ttf",
+                "C:/Windows/Fonts/gulim.ttc",
+                "C:/Windows/Fonts/batang.ttc",
+                # macOS
+                "/System/Library/Fonts/AppleGothic.ttf",
+                "/Library/Fonts/AppleMyungjo.ttf",
             ]
             
             self.korean_font = None
+            
+            # 먼저 Noto Sans CJK 시도 (가장 좋은 한글 지원)
             for font_path in font_paths:
                 if os.path.exists(font_path):
                     try:
-                        pdfmetrics.registerFont(TTFont('Korean', font_path))
+                        # TTC 파일 처리
+                        if font_path.endswith('.ttc'):
+                            pdfmetrics.registerFont(TTFont('Korean', font_path, subfontIndex=0))
+                        else:
+                            pdfmetrics.registerFont(TTFont('Korean', font_path))
+                        
                         self.korean_font = 'Korean'
                         self.logger.info(f"한글 폰트 등록 성공: {font_path}")
                         break
@@ -52,11 +67,15 @@ class FileManager:
                         self.logger.debug(f"폰트 등록 실패: {font_path}, {e}")
                         continue
             
+            # 폰트를 찾지 못한 경우 기본 폰트 사용
             if not self.korean_font:
                 self.logger.warning("한글 폰트를 찾을 수 없습니다. 기본 폰트를 사용합니다.")
+                # 기본 폰트로 Helvetica 사용 (영문만 지원)
+                self.korean_font = 'Helvetica'
                 
         except Exception as e:
             self.logger.warning(f"폰트 설정 실패: {e}")
+            self.korean_font = 'Helvetica'
     
     def save_as_txt(
         self, 
@@ -215,7 +234,7 @@ class FileManager:
             styles = getSampleStyleSheet()
             
             # 한글 스타일 설정
-            if self.korean_font:
+            if self.korean_font and self.korean_font != 'Helvetica':
                 korean_style = ParagraphStyle(
                     'Korean',
                     parent=styles['Normal'],
@@ -234,6 +253,8 @@ class FileManager:
                     alignment=1  # 중앙 정렬
                 )
             else:
+                # 한글 폰트가 없는 경우 기본 폰트 사용
+                self.logger.warning("한글 폰트가 없어 기본 폰트를 사용합니다. 한글이 깨질 수 있습니다.")
                 korean_style = styles['Normal']
                 title_style = styles['Heading1']
             
@@ -253,6 +274,14 @@ class FileManager:
                 
                 # 텍스트 내용 처리
                 text_content = result['text'] if result.get('status') == 'success' else f"[오류] {result['text']}"
+                
+                # 한글 폰트가 없는 경우 각 문자를 체크
+                if self.korean_font == 'Helvetica':
+                    # 한글이 포함된 문자를 체크하고 경고 메시지 추가
+                    korean_chars = [c for c in text_content if ord(c) > 127]
+                    if korean_chars:
+                        warning_msg = "\n\n[경고] 한글 폰트가 설치되지 않아 한글이 제대로 표시되지 않을 수 있습니다.\n"
+                        text_content = warning_msg + text_content
                 
                 # HTML 특수문자 이스케이프
                 text_content = text_content.replace('&', '&amp;')

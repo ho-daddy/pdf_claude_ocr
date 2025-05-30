@@ -306,16 +306,27 @@ def process_pdf(uploaded_file, doc_type, output_format, dpi, include_page_number
             
         else:
             # PDF 파일 생성
+            status_text.text("📄 PDF 파일 생성 중... (한글 폰트 로딩 중)")
+            
             with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as tmp_output:
                 output_path = tmp_output.name
             
-            file_manager.save_as_pdf_reportlab(ocr_results, output_path, include_page_numbers)
+            # 한글 PDF 생성 시도
+            success = file_manager.save_as_pdf_reportlab(ocr_results, output_path, include_page_numbers)
             
-            with open(output_path, 'rb') as f:
-                pdf_content = f.read()
-            
-            filename = f"{uploaded_file.name.replace('.pdf', '')}_ocr.pdf"
-            st.session_state.results = (pdf_content, filename)
+            if success:
+                with open(output_path, 'rb') as f:
+                    pdf_content = f.read()
+                
+                filename = f"{uploaded_file.name.replace('.pdf', '')}_ocr.pdf"
+                st.session_state.results = (pdf_content, filename)
+                
+                # 사용자에게 한글 폰트 상태 안내
+                if hasattr(file_manager, 'korean_font') and file_manager.korean_font == 'Helvetica':
+                    st.warning("⚠️ 한글 폰트가 설치되지 않아 PDF에서 한글이 올바르게 표시되지 않을 수 있습니다. TXT 형식을 권장합니다.")
+            else:
+                st.error("PDF 생성에 실패했습니다. TXT 형식을 사용해주세요.")
+                return
             
             # 임시 파일 정리
             os.unlink(output_path)
