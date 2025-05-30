@@ -224,6 +224,23 @@ def process_pdf(uploaded_file, doc_type, output_format, dpi, include_page_number
         
         # PDF 변환기 초기화
         pdf_converter = PDFConverter()
+        
+        # Poppler 설치 확인
+        if not pdf_converter.check_poppler_installation():
+            st.error("😱 Poppler이 설치되지 않았습니다!")
+            st.info("""
+            **로컬 실행 시:**
+            - Windows: `choco install poppler` 또는 수동 설치
+            - macOS: `brew install poppler`
+            - Ubuntu: `sudo apt-get install poppler-utils`
+            
+            **Streamlit Cloud 배포 시:**
+            - `packages.txt` 파일이 자동으로 설치합니다
+            - 배포 후에는 자동으로 작동합니다
+            """)
+            return
+            
+        pdf_converter = PDFConverter()
         file_manager = FileManager()
         
         # 1단계: PDF를 이미지로 변환

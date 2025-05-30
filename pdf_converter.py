@@ -32,14 +32,30 @@ class PDFConverter:
             설치 여부 (True/False)
         """
         try:
+            # pdf2image import 테스트
+            from pdf2image import convert_from_path
+            
             # 간단한 테스트로 poppler 설치 확인
             import subprocess
-            result = subprocess.run(['pdftoppm', '-h'], 
-                                  capture_output=True, 
-                                  text=True, 
-                                  timeout=5)
-            return result.returncode == 0
-        except (subprocess.TimeoutExpired, FileNotFoundError, Exception):
+            
+            # Windows에서는 pdftoppm, Linux에서는 pdftoppm 확인
+            commands_to_try = ['pdftoppm', 'pdftocairo']
+            
+            for cmd in commands_to_try:
+                try:
+                    result = subprocess.run([cmd, '-h'], 
+                                          capture_output=True, 
+                                          text=True, 
+                                          timeout=5)
+                    if result.returncode == 0:
+                        return True
+                except (subprocess.TimeoutExpired, FileNotFoundError):
+                    continue
+            
+            return False
+            
+        except (ImportError, subprocess.TimeoutExpired, FileNotFoundError, Exception) as e:
+            self.logger.warning(f"Poppler 확인 실패: {e}")
             return False
     
     def get_pdf_page_count(self, pdf_path: str) -> int:
