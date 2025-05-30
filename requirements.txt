@@ -1,0 +1,20 @@
+# PDF Claude OCR - Streamlit Cloud Requirements
+# Streamlit Cloud에서 자동으로 설치될 패키지들
+
+# Core dependencies
+anthropic>=0.40.0
+pdf2image>=1.17.0
+Pillow>=10.0.0
+reportlab>=4.0.0
+
+# Web framework  
+streamlit>=1.28.0
+
+# Image processing
+opencv-python-headless>=4.8.0
+
+# Environment management
+python-dotenv>=1.0.0
+
+# Additional utilities
+requests>=2.31.0
