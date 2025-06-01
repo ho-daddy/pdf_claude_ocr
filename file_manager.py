@@ -32,7 +32,17 @@ class FileManager:
     def setup_fonts(self):
         """PDF 생성을 위한 폰트 설정"""
         try:
-            # 웹 환경(Linux)과 로컬 환경을 고려한 한글 폰트 등록
+            # 프로젝트 폴더 내 NanumGothic.ttf 우선 등록
+            local_font_path = os.path.join(os.path.dirname(__file__), 'NanumGothic.ttf')
+            if os.path.exists(local_font_path):
+                try:
+                    pdfmetrics.registerFont(TTFont('NanumGothic', local_font_path))
+                    self.korean_font = 'NanumGothic'
+                    self.logger.info(f"한글 폰트 등록 성공: {local_font_path}")
+                    return
+                except Exception as e:
+                    self.logger.warning(f"NanumGothic 폰트 등록 실패: {e}")
+            # 기존 경로들
             font_paths = [
                 # Linux (Streamlit Cloud)
                 "/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc",
@@ -47,32 +57,23 @@ class FileManager:
                 "/System/Library/Fonts/AppleGothic.ttf",
                 "/Library/Fonts/AppleMyungjo.ttf",
             ]
-            
             self.korean_font = None
-            
-            # 먼저 Noto Sans CJK 시도 (가장 좋은 한글 지원)
             for font_path in font_paths:
                 if os.path.exists(font_path):
                     try:
-                        # TTC 파일 처리
                         if font_path.endswith('.ttc'):
                             pdfmetrics.registerFont(TTFont('Korean', font_path, subfontIndex=0))
                         else:
                             pdfmetrics.registerFont(TTFont('Korean', font_path))
-                        
                         self.korean_font = 'Korean'
                         self.logger.info(f"한글 폰트 등록 성공: {font_path}")
                         break
                     except Exception as e:
                         self.logger.debug(f"폰트 등록 실패: {font_path}, {e}")
                         continue
-            
-            # 폰트를 찾지 못한 경우 기본 폰트 사용
             if not self.korean_font:
                 self.logger.warning("한글 폰트를 찾을 수 없습니다. 기본 폰트를 사용합니다.")
-                # 기본 폰트로 Helvetica 사용 (영문만 지원)
                 self.korean_font = 'Helvetica'
-                
         except Exception as e:
             self.logger.warning(f"폰트 설정 실패: {e}")
             self.korean_font = 'Helvetica'

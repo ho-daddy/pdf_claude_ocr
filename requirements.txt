@@ -1,5 +1,5 @@
 # PDF Claude OCR - Streamlit Cloud Requirements
-# Streamlit Cloud에서 자동으로 설치될 패키지들
+# For Streamlit Cloud
 
 # Core dependencies
 anthropic>=0.40.0
